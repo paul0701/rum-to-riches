@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rum to Riches — A Caribbean Trading Voyage</title>
+  <meta name="description" content="Trade rum across the Spanish Main, build a fleet, hire escorts and outrun pirates. Your voyages keep sailing while you're away.">
+  <link rel="icon" href="/src/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.25  0 0 0 0 0.17  0 0 0 0 0.08  0 0 0 0.35 0"/></filter>
+  </svg>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- Sign-in / enlist -->
+  <section id="auth-screen" class="auth-screen" hidden data-testid="auth-screen">
+    <div class="auth-hero">
+      <p class="eyebrow">Anno 1712 &middot; The Spanish Main</p>
+      <h1 class="title">Rum <em>to</em> Riches</h1>
+      <p class="lede">Begin with one battered sloop and five hundred doubloons. Buy cheap rum in Port Royal, run it to thirsty Cartagena, hire guns against the pirate brotherhood &mdash; and build a fleet that keeps sailing while you sleep.</p>
+      <ul class="hero-points">
+        <li>Voyages run in real time, even when you close the tab</li>
+        <li>Escorts and upgrades turn pirates into bounty</li>
+        <li>Sign in from any device and your fleet is waiting</li>
+      </ul>
+    </div>
+    <div class="auth-card card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-auth-tab="login" data-testid="auth-tab-login">Sign in</button>
+        <button class="tab" data-auth-tab="register" data-testid="auth-tab-register">Enlist</button>
+        <button class="tab" data-auth-tab="recover" data-testid="auth-tab-recover">Lost PIN</button>
+      </div>
+      <form id="auth-form" class="auth-form" novalidate data-testid="auth-form">
+        <label>Captain name
+          <input name="captain" autocomplete="username" maxlength="20" required data-testid="auth-captain-input" placeholder="e.g. Anne Bonny">
+        </label>
+        <label data-field="pin">PIN <small>(4&ndash;6 digits)</small>
+          <input name="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" data-testid="auth-pin-input" placeholder="&bull;&bull;&bull;&bull;">
+        </label>
+        <label data-field="email" hidden>Recovery email <small data-email-note>(optional &mdash; the only way to reset a forgotten PIN)</small>
+          <input name="email" type="email" autocomplete="email" maxlength="254" data-testid="auth-email-input" placeholder="you@harbour.com">
+        </label>
+        <label data-field="newPin" hidden>New PIN <small>(4&ndash;6 digits)</small>
+          <input name="newPin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" data-testid="auth-newpin-input">
+        </label>
+        <p class="form-error" id="auth-error" role="alert" data-testid="auth-error"></p>
+        <button class="btn btn-primary btn-block" type="submit" id="auth-submit" data-testid="auth-submit-button">Sign in</button>
+        <p class="fine">Names are checked against the harbour code: no profanity, slurs or impersonation of staff.</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <section id="game-screen" class="game-screen" hidden data-testid="game-screen">
+    <header class="topbar">
+      <div class="brand">Rum <em>to</em> Riches</div>
+      <div class="ledger">
+        <div class="ledger-item"><span>Captain</span><strong id="hud-captain" data-testid="hud-captain"></strong></div>
+        <div class="ledger-item gold"><span>Treasury</span><strong id="hud-gold" data-testid="hud-gold">0</strong></div>
+        <div class="ledger-item"><span>Fleet</span><strong id="hud-fleet" data-testid="hud-fleet">0</strong></div>
+        <div class="ledger-item"><span>Voyages</span><strong id="hud-voyages" data-testid="hud-voyages">0</strong></div>
+      </div>
+      <div class="topbar-right">
+        <span id="sync" class="sync" data-state="saved" data-testid="sync-status">Saved</span>
+        <button class="btn btn-ghost" id="logout-btn" data-testid="logout-button">Sign out</button>
+      </div>
+    </header>
+    <div id="offline-banner" class="banner" hidden data-testid="offline-banner">The harbour is unreachable &mdash; showing your last known fleet. Actions will work again once you are back online.</div>
+
+    <div class="layout">
+      <section class="chart-wrap card" aria-label="Sea chart">
+        <div class="chart-head">
+          <h2>Chart of the Main</h2>
+          <p class="hint">Click a port to see its market. Redder routes are thick with pirates.</p>
+        </div>
+        <svg id="chart" class="chart" viewBox="0 0 100 82" data-testid="sea-chart"></svg>
+      </section>
+
+      <section class="panel card">
+        <nav class="tabs" role="tablist">
+          <button class="tab active" data-tab="fleet" data-testid="tab-fleet">Fleet</button>
+          <button class="tab" data-tab="market" data-testid="tab-market">Market</button>
+          <button class="tab" data-tab="shipyard" data-testid="tab-shipyard">Shipyard</button>
+          <button class="tab" data-tab="log" data-testid="tab-log">Logbook</button>
+        </nav>
+        <div id="panel" class="panel-body"></div>
+      </section>
+    </div>
+  </section>
+
+  <div id="boot" class="boot" data-testid="boot-loader"><span class="wheel"></span>Hoisting the sails&hellip;</div>
+  <dialog id="dialog" class="dialog" data-testid="dialog"></dialog>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
