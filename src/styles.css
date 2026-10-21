@@ -109,6 +109,17 @@ label { display: block; font-size: 0.9rem; }
 .form-error { color: var(--rust); min-height: 1.25rem; margin: 0; font-size: 0.9rem; }
 .fine { font-size: 0.78rem; color: var(--ink-faint); margin: 0; }
 
+/* PIN rules + taken-name suggestions */
+.pin-rules { list-style: none; margin: -0.35rem 0 0; padding: 0.65rem 0.85rem; display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--ink-soft); background: rgba(255, 250, 235, 0.45); border: 1px dashed var(--ink-faint); border-radius: 4px; }
+.pin-rules li span { display: inline-block; width: 1.1em; font-weight: 700; }
+.pin-rules li.ok { color: var(--ok); }
+.pin-rules li.bad { color: var(--rust); }
+.suggest { margin-top: -0.35rem; padding: 0.65rem 0.85rem; background: rgba(255, 250, 235, 0.45); border: 1px dashed var(--rust); border-radius: 4px; }
+.suggest-title { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--ink-soft); }
+.suggest-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip { font: inherit; font-size: 0.9rem; padding: 0.45rem 0.8rem; min-height: 40px; color: var(--ink); background: var(--paper); border: 1px solid var(--rust); border-radius: 999px; cursor: pointer; }
+.chip:hover, .chip:focus-visible { background: var(--rust); color: var(--paper); outline: none; }
+
 /* ---------- game ---------- */
 .topbar {
   display: flex; align-items: center; gap: 2rem; justify-content: space-between; flex-wrap: wrap;

@@ -1,6 +1,7 @@
 import { Api, session, cache } from "./api.js";
 import * as V from "./views.js";
 import { renderChart, tickChart } from "./chart.js";
+import { PIN_RULES, pinProblem } from "./pin.js";
 
 const $ = (sel) => document.querySelector(sel);
 const S = {
@@ -271,10 +272,54 @@ function setAuthMode(mode) {
   form.querySelector("[data-email-note]").textContent =
     mode === "register" ? "(optional — the only way to reset a forgotten PIN)" : "(the one you enlisted with)";
   form.pin.autocomplete = mode === "register" ? "new-password" : "current-password";
+  // The PIN rules only apply to a NEW PIN, so they show on Enlist and Lost PIN, never on Sign in.
+  form.querySelector("[data-pin-rules=pin]").hidden = mode !== "register";
+  form.querySelector("[data-pin-rules=newPin]").hidden = mode !== "recover";
+  paintPinRules("pin");
+  paintPinRules("newPin");
+  hideSuggestions();
   $("#auth-submit").textContent = AUTH_LABELS[mode];
   $("#auth-error").textContent = "";
 }
 document.querySelectorAll("[data-auth-tab]").forEach((t) => t.addEventListener("click", () => setAuthMode(t.dataset.authTab)));
+
+// Live PIN rule list: neutral until typing starts, then a tick or a cross per rule.
+function paintPinRules(field) {
+  const list = document.querySelector(`[data-pin-rules=${field}]`);
+  const value = $("#auth-form")[field].value;
+  list.innerHTML = PIN_RULES.filter((r) => !r.hidden).map((r) => {
+    const state = value ? (r.ok(value) ? "ok" : "bad") : "idle";
+    const mark = state === "ok" ? "\u2713" : state === "bad" ? "\u2717" : "\u2022";
+    return `<li class="${state}"><span aria-hidden="true">${mark}</span> ${r.text}</li>`;
+  }).join("");
+}
+["pin", "newPin"].forEach((f) => $("#auth-form")[f].addEventListener("input", () => paintPinRules(f)));
+
+// Taken-name suggestions: tap one to drop it into the name box.
+function hideSuggestions() {
+  $("#name-suggest").hidden = true;
+  $("#name-suggest-list").innerHTML = "";
+}
+function showSuggestions(names) {
+  const list = $("#name-suggest-list");
+  list.innerHTML = "";
+  names.forEach((n) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = n;
+    b.dataset.testid = "name-suggestion";
+    b.addEventListener("click", () => {
+      $("#auth-form").captain.value = n;
+      hideSuggestions();
+      $("#auth-error").textContent = "";
+      $("#auth-form").pin.focus();
+    });
+    list.appendChild(b);
+  });
+  $("#name-suggest").hidden = names.length === 0;
+}
+$("#auth-form").captain.addEventListener("input", hideSuggestions);
 
 $("#auth-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -287,6 +332,10 @@ $("#auth-form").addEventListener("submit", async (e) => {
   const pin = mode === "recover" ? body.newPin : body.pin;
   if (!body.captain) return ($("#auth-error").textContent = "Enter your captain name.");
   if (!/^\d{4,6}$/.test(pin)) return ($("#auth-error").textContent = "PIN must be 4 to 6 digits.");
+  if (mode !== "login") {
+    const problem = pinProblem(pin);
+    if (problem) return ($("#auth-error").textContent = problem);
+  }
   if (mode === "register" && body.email === "") delete body.email;
   const btn = $("#auth-submit");
   btn.disabled = true;
@@ -297,10 +346,16 @@ $("#auth-form").addEventListener("submit", async (e) => {
     S.tab = "fleet";
     S.marketPort = null;
     await loadGame();
+
+// Installable app: the service worker caches the shell only, never the API.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => { /* not installable here */ }));
+}
     if (mode === "register") toast(`Welcome aboard, Captain ${data.captain}. Your sloop awaits in Port Royal.`);
     if (mode === "recover") toast("PIN reset. Fair winds, Captain.");
   } catch (err) {
     $("#auth-error").textContent = err.message;
+    if (mode === "register" && err.status === 409 && err.data?.suggestions?.length) showSuggestions(err.data.suggestions);
   } finally {
     btn.disabled = false;
   }
@@ -310,6 +365,16 @@ $("#auth-form").addEventListener("submit", async (e) => {
 setInterval(tick, 1000);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && session.get() && !S.busy) loadGame();
+
+// Installable app: the service worker caches the shell only, never the API.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => { /* not installable here */ }));
+}
 });
 window.addEventListener("online", () => session.get() && loadGame());
 loadGame();
+
+// Installable app: the service worker caches the shell only, never the API.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => { /* not installable here */ }));
+}

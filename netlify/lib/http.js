@@ -1,7 +1,9 @@
 export class HttpError extends Error {
-  constructor(status, message) {
+  // `extra` is merged into the JSON error body (e.g. name suggestions on a 409).
+  constructor(status, message, extra = null) {
     super(message);
     this.status = status;
+    this.extra = extra;
   }
 }
 
@@ -34,7 +36,7 @@ export const handle = (fn) => async (req, context) => {
   try {
     return await fn(req, context);
   } catch (err) {
-    if (err && Number.isInteger(err.status)) return json(err.status, { ok: false, error: err.message });
+    if (err && Number.isInteger(err.status)) return json(err.status, { ...(err.extra || {}), ok: false, error: err.message });
     console.error(err);
     return json(500, { ok: false, error: "Something went wrong below decks. Please try again." });
   }

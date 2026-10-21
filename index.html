@@ -6,6 +6,13 @@
   <title>Rum to Riches — A Caribbean Trading Voyage</title>
   <meta name="description" content="Trade rum across the Spanish Main, build a fleet, hire escorts and outrun pirates. Your voyages keep sailing while you're away.">
   <link rel="icon" href="/src/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#efe1bf">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Rum to Riches">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
@@ -36,15 +43,21 @@
         <label>Captain name
           <input name="captain" autocomplete="username" maxlength="20" required data-testid="auth-captain-input" placeholder="e.g. Anne Bonny">
         </label>
+        <div class="suggest" id="name-suggest" data-testid="name-suggestions" hidden>
+          <p class="suggest-title">That name is taken. Try one of these:</p>
+          <div class="suggest-list" id="name-suggest-list"></div>
+        </div>
         <label data-field="pin">PIN <small>(4&ndash;6 digits)</small>
           <input name="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" data-testid="auth-pin-input" placeholder="&bull;&bull;&bull;&bull;">
         </label>
+        <ul class="pin-rules" data-pin-rules="pin" data-testid="pin-rules" hidden></ul>
         <label data-field="email" hidden>Recovery email <small data-email-note>(optional &mdash; the only way to reset a forgotten PIN)</small>
           <input name="email" type="email" autocomplete="email" maxlength="254" data-testid="auth-email-input" placeholder="you@harbour.com">
         </label>
         <label data-field="newPin" hidden>New PIN <small>(4&ndash;6 digits)</small>
           <input name="newPin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" data-testid="auth-newpin-input">
         </label>
+        <ul class="pin-rules" data-pin-rules="newPin" data-testid="newpin-rules" hidden></ul>
         <p class="form-error" id="auth-error" role="alert" data-testid="auth-error"></p>
         <button class="btn btn-primary btn-block" type="submit" id="auth-submit" data-testid="auth-submit-button">Sign in</button>
         <p class="fine">Names are checked against the harbour code: no profanity, slurs or impersonation of staff.</p>
