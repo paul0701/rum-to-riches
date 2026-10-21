@@ -1,7 +1,8 @@
 // POST /api/auth  { action: "register" | "login" | "recover" | "logout", ... }
 import { json, handle, readJson, requireMethod, HttpError } from "../lib/http.js";
 import { loadRecord, createRecord, updateRecord } from "../lib/store.js";
-import { validateName, cleanName, captainId } from "../lib/names.js";
+import { validateName, cleanName, captainId, suggestNames } from "../lib/names.js";
+import { pinProblem } from "../../src/pin.js";
 import {
   PIN_RE, EMAIL_RE, makeSecret, verifySecret, maskEmail, assertNotLocked,
   registerFailure, issueSession, parseToken, revokeSession
@@ -14,6 +15,19 @@ const NOT_FOUND = "No captain by that name sails these waters. Enlist first.";
 const requirePin = (pin, field = "PIN") => {
   if (typeof pin !== "string" || !PIN_RE.test(pin)) throw new HttpError(400, `${field} must be 4 to 6 digits.`);
 };
+
+// New PINs (enlist and PIN reset) must also pass the "not too obvious" rules. Sign-in only checks the format.
+const requireStrongPin = (pin, field = "PIN") => {
+  requirePin(pin, field);
+  const problem = pinProblem(pin);
+  if (problem) throw new HttpError(400, field === "PIN" ? problem : problem.replace(/^That PIN/, "That new PIN"));
+};
+
+// 409 reply for a taken name, with up to three free alternatives the player can tap.
+async function takenError(captain) {
+  const suggestions = await suggestNames(captain, async (n) => !!(await loadRecord(captainId(n))));
+  return new HttpError(409, TAKEN, { suggestions });
+}
 
 const requireCaptain = (captain) => {
   if (typeof captain !== "string" || !captain.trim()) throw new HttpError(400, "Captain name is required.");
@@ -39,14 +53,14 @@ const unwrap = (result) => {
 async function register({ captain, pin, email }) {
   const err = validateName(captain, { min: 3, max: 20, label: "Captain name" });
   if (err) throw new HttpError(400, err);
-  requirePin(pin);
+  requireStrongPin(pin);
   let emailNorm = null;
   if (email !== undefined && email !== null && email !== "") {
     if (typeof email !== "string" || !EMAIL_RE.test(email.trim())) throw new HttpError(400, "Recovery email is not a valid address.");
     emailNorm = email.trim().toLowerCase();
   }
   const id = captainId(captain);
-  if (await loadRecord(id)) throw new HttpError(409, TAKEN);
+  if (await loadRecord(id)) throw await takenError(captain);
   const now = Date.now();
   const record = {
     id,
@@ -63,7 +77,7 @@ async function register({ captain, pin, email }) {
     createdAt: new Date(now).toISOString()
   };
   const token = issueSession(record, now);
-  if (!(await createRecord(record))) throw new HttpError(409, TAKEN);
+  if (!(await createRecord(record))) throw await takenError(captain);
   return json(200, sessionReply(record, token));
 }
 
@@ -83,7 +97,7 @@ async function login({ captain, pin }) {
 async function recover({ captain, email, newPin }) {
   const id = requireCaptain(captain);
   if (typeof email !== "string" || !EMAIL_RE.test(email.trim())) throw new HttpError(400, "Enter the recovery email you registered with.");
-  requirePin(newPin, "New PIN");
+  requireStrongPin(newPin, "New PIN");
   const result = await updateRecord(id, (record) => {
     if (!record) throw new HttpError(404, NOT_FOUND);
     const now = Date.now();

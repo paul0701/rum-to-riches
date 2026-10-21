@@ -44,6 +44,46 @@ export function validateName(raw, { min, max, label }) {
 
 export const cleanName = (raw) => raw.trim().replace(/\s+/g, " ");
 
+const SUFFIXES = ["the Bold", "the Red", "II", "of Tortuga", "the Fair", "the Wise", "of the Main", "the Younger"];
+const MAX_SUGGESTIONS = 3;
+
+// Candidate alternatives for a taken name, most natural first. All fit the length limit and pass validateName.
+export function nameCandidates(raw, opts) {
+  const base = cleanName(raw);
+  const out = [];
+  const seen = new Set([captainId(base)]);
+  const add = (name) => {
+    const n = cleanName(name);
+    const id = captainId(n);
+    if (!id || seen.has(id) || validateName(n, opts)) return;
+    seen.add(id);
+    out.push(n);
+  };
+  for (const suffix of SUFFIXES) {
+    // Only whole-name suffixes: never chop the captain's own name in half ("Anne Bonn of Tortuga").
+    if (base.length + 1 + suffix.length > opts.max) continue;
+    add(`${base} ${suffix}`);
+  }
+  for (const n of [2, 3, 7, 12, 17]) {
+    const tail = String(n);
+    add(`${base.slice(0, opts.max - tail.length - 1).trim()} ${tail}`);
+  }
+  return out;
+}
+
+// Up to three free names. isTaken(name) -> Promise<boolean> checks the real store.
+export async function suggestNames(raw, isTaken, opts = { min: 3, max: 20, label: "Captain name" }) {
+  const found = [];
+  const candidates = nameCandidates(raw, opts);
+  // Check in small parallel batches so a busy harbour does not mean twenty sequential reads.
+  for (let i = 0; i < candidates.length && found.length < MAX_SUGGESTIONS; i += MAX_SUGGESTIONS) {
+    const batch = candidates.slice(i, i + MAX_SUGGESTIONS);
+    const taken = await Promise.all(batch.map((n) => isTaken(n)));
+    batch.forEach((n, j) => { if (!taken[j] && found.length < MAX_SUGGESTIONS) found.push(n); });
+  }
+  return found;
+}
+
 // Stable key for a captain name: "Anne Bonny" -> "anne-bonny"
 export const captainId = (raw) =>
   cleanName(raw).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");

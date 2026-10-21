@@ -21,9 +21,10 @@ export const cache = {
 };
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, data = {}) {
     super(message);
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -38,7 +39,7 @@ export async function api(path, body) {
     throw new ApiError("Cannot reach the harbour. Check your connection.", 0);
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.error || `Request failed (${res.status}).`, res.status);
+  if (!res.ok) throw new ApiError(data.error || `Request failed (${res.status}).`, res.status, data);
   return data;
 }
 
